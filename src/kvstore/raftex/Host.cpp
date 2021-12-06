@@ -251,6 +251,7 @@ void Host::appendLogsInternal(folly::EventBase* eb, std::shared_ptr<cpp2::Append
                    return;
                  })
       .thenError(folly::tag_t<std::exception>{}, [self = shared_from_this()](std::exception&& ex) {
+        LOG(FATAL) << "appendLogsInternal fatal";
         VLOG(2) << self->idStr_ << ex.what();
         cpp2::AppendLogResponse r;
         r.set_error_code(cpp2::ErrorCode::E_RPC_EXCEPTION);
