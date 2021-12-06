@@ -125,6 +125,7 @@ void ChainUpdateEdgeProcessorLocal::doRpc(folly::Promise<Code>&& promise, int re
   iClient->chainUpdateEdge(reversedReq, termOfPrepare_, ver_, std::move(p));
   std::move(f)
       .thenTry([=, p = std::move(promise)](auto&& t) mutable {
+        CHECK(!t.hasException());
         auto code = t.hasValue() ? t.value() : Code::E_RPC_FAILURE;
         VLOG(1) << "code = " << apache::thrift::util::enumNameSafe(code);
         switch (code) {

@@ -47,6 +47,7 @@ folly::Future<SucceededResultList<FutureIter>> collectNSucceeded(FutureIter firs
   for (size_t index = 0; first != last; ++first, ++index) {
     first->setCallback_([n, ctx, index](auto, folly::Try<FutureReturnType<FutureIter>>&& t) {
       if (!ctx->promise.isFulfilled()) {
+        CHECK(!t.hasException());
         if (!t.hasException()) {
           if (ctx->eval(index, t.value())) {
             ++ctx->nSucceeded;

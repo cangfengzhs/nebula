@@ -384,6 +384,7 @@ folly::Future<cpp2::HeartbeatResponse> Host::sendHeartbeat(folly::EventBase* eb,
       .then([self = shared_from_this(),
              pro = std::move(promise)](folly::Try<cpp2::HeartbeatResponse>&& t) mutable {
         VLOG(3) << self->idStr_ << "heartbeat call got response";
+        CHECK(!t.hasException());
         if (t.hasException()) {
           cpp2::HeartbeatResponse resp;
           resp.set_error_code(cpp2::ErrorCode::E_RPC_EXCEPTION);

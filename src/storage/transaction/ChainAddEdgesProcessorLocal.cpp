@@ -174,6 +174,7 @@ folly::SemiFuture<Code> ChainAddEdgesProcessorLocal::forwardToDelegateProcessor(
   auto [pro, fut] = folly::makePromiseContract<Code>();
   std::move(futProc).thenTry([&, p = std::move(pro)](auto&& t) mutable {
     auto rc = Code::SUCCEEDED;
+    CHECK(!t.hasException());
     if (t.hasException()) {
       LOG(INFO) << "catch ex: " << t.exception().what();
       rc = Code::E_UNKNOWN;
@@ -220,6 +221,7 @@ void ChainAddEdgesProcessorLocal::doRpc(folly::Promise<Code>&& promise,
   iClient->chainAddEdges(req, restrictTerm_, edgeVer_, std::move(p));
 
   std::move(f).thenTry([=, p = std::move(promise)](auto&& t) mutable {
+    CHECK(!t.hasException());
     auto code = t.hasValue() ? t.value() : Code::E_RPC_FAILURE;
     switch (code) {
       case Code::E_LEADER_CHANGED:
