@@ -178,15 +178,8 @@ int main(int argc, char *argv[]) {
   }
 
   FLOG_INFO("Starting nebula-graphd on %s:%d\n", localhost.host.c_str(), localhost.port);
-  try {
-    gServer->serve();  // Blocking wait until shut down via gServer->stop()
-  } catch (const std::exception &e) {
-    FLOG_ERROR("Exception thrown while starting the RPC server: %s", e.what());
-    return EXIT_FAILURE;
-  }
-
+  gServer->serve();  // Blocking wait until shut down via gServer->stop()
   FLOG_INFO("nebula-graphd on %s:%d has been stopped", localhost.host.c_str(), localhost.port);
-
   return EXIT_SUCCESS;
 }
 

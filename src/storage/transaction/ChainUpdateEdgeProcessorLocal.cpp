@@ -113,35 +113,31 @@ folly::SemiFuture<Code> ChainUpdateEdgeProcessorLocal::processLocal(Code code) {
 }
 
 void ChainUpdateEdgeProcessorLocal::doRpc(folly::Promise<Code>&& promise, int retry) noexcept {
-  try {
-    if (retry > retryLimit_) {
-      promise.setValue(Code::E_LEADER_CHANGED);
-      return;
-    }
-    auto* iClient = env_->txnMan_->getInternalClient();
-    folly::Promise<Code> p;
-    auto reversedReq = reverseRequest(req_);
-
-    auto f = p.getFuture();
-    iClient->chainUpdateEdge(reversedReq, termOfPrepare_, ver_, std::move(p));
-    std::move(f)
-        .thenTry([=, p = std::move(promise)](auto&& t) mutable {
-          auto code = t.hasValue() ? t.value() : Code::E_RPC_FAILURE;
-          VLOG(1) << "code = " << apache::thrift::util::enumNameSafe(code);
-          switch (code) {
-            case Code::E_LEADER_CHANGED:
-              doRpc(std::move(p), ++retry);
-              break;
-            default:
-              p.setValue(code);
-              break;
-          }
-          return code;
-        })
-        .get();
-  } catch (std::exception& ex) {
-    LOG(WARNING) << "doRpc() ex: " << ex.what();
+  if (retry > retryLimit_) {
+    promise.setValue(Code::E_LEADER_CHANGED);
+    return;
   }
+  auto* iClient = env_->txnMan_->getInternalClient();
+  folly::Promise<Code> p;
+  auto reversedReq = reverseRequest(req_);
+
+  auto f = p.getFuture();
+  iClient->chainUpdateEdge(reversedReq, termOfPrepare_, ver_, std::move(p));
+  std::move(f)
+      .thenTry([=, p = std::move(promise)](auto&& t) mutable {
+        auto code = t.hasValue() ? t.value() : Code::E_RPC_FAILURE;
+        VLOG(1) << "code = " << apache::thrift::util::enumNameSafe(code);
+        switch (code) {
+          case Code::E_LEADER_CHANGED:
+            doRpc(std::move(p), ++retry);
+            break;
+          default:
+            p.setValue(code);
+            break;
+        }
+        return code;
+      })
+      .get();
 }
 
 void ChainUpdateEdgeProcessorLocal::erasePrime() {

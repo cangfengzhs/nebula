@@ -218,47 +218,40 @@ std::string ESGraphAdapter::indexExistsCmd(const HttpClient& client,
 }
 
 bool ESGraphAdapter::result(const std::string& ret, std::vector<std::string>& rows) const {
-  try {
-    auto root = folly::parseJson(ret);
-    auto rootHits = root.find("hits");
-    if (rootHits != root.items().end()) {
-      auto subHits = rootHits->second.find("hits");
-      if (subHits != rootHits->second.items().end()) {
-        for (auto& item : subHits->second) {
-          auto s = item.find("_source");
-          if (s != item.items().end()) {
-            auto v = s->second.find("value");
-            if (v != s->second.items().end()) {
-              rows.emplace_back(v->second.getString());
-            } else {
-              continue;
-            }
+  auto root = folly::parseJson(ret);
+  auto rootHits = root.find("hits");
+  if (rootHits != root.items().end()) {
+    auto subHits = rootHits->second.find("hits");
+    if (subHits != rootHits->second.items().end()) {
+      for (auto& item : subHits->second) {
+        auto s = item.find("_source");
+        if (s != item.items().end()) {
+          auto v = s->second.find("value");
+          if (v != s->second.items().end()) {
+            rows.emplace_back(v->second.getString());
           } else {
             continue;
           }
+        } else {
+          continue;
         }
       }
-      return true;
     }
-  } catch (std::exception& e) {
-    LOG(ERROR) << "result error : " << e.what();
+    return true;
   }
+
   LOG(ERROR) << "error reason : " << ret;
   return false;
 }
 
 bool ESGraphAdapter::statusCheck(const std::string& ret) const {
-  try {
-    auto root = folly::parseJson(ret);
-    if (root.isArray()) {
-      return false;
-    }
-    auto result = root.find("acknowledged");
-    if (result != root.items().end() && result->second.isBool() && result->second.getBool()) {
-      return true;
-    }
-  } catch (const std::exception& ex) {
-    LOG(ERROR) << "result error : " << ex.what();
+  auto root = folly::parseJson(ret);
+  if (root.isArray()) {
+    return false;
+  }
+  auto result = root.find("acknowledged");
+  if (result != root.items().end() && result->second.isBool() && result->second.getBool()) {
+    return true;
   }
 
   LOG(ERROR) << "error reason : " << ret;
@@ -266,20 +259,17 @@ bool ESGraphAdapter::statusCheck(const std::string& ret) const {
 }
 
 bool ESGraphAdapter::indexCheck(const std::string& ret) const {
-  try {
-    auto root = folly::parseJson(ret);
-    if (!root.isArray()) {
-      return false;
-    }
-    for (auto& entry : root) {
-      auto exists = entry.find("index");
-      if (exists != entry.items().end()) {
-        return true;
-      }
-    }
-  } catch (std::exception& e) {
-    LOG(ERROR) << "result error : " << e.what();
+  auto root = folly::parseJson(ret);
+  if (!root.isArray()) {
+    return false;
   }
+  for (auto& entry : root) {
+    auto exists = entry.find("index");
+    if (exists != entry.items().end()) {
+      return true;
+    }
+  }
+
   LOG(ERROR) << "error reason : " << ret;
   return false;
 }

@@ -87,74 +87,70 @@ void NebulaStore::loadPartFromDataPath() {
     auto dirs = fs::FileUtils::listAllDirsInDir(rootPath.c_str());
     for (auto& dir : dirs) {
       LOG(INFO) << "Scan path \"" << rootPath << "/" << dir << "\"";
-      try {
-        GraphSpaceID spaceId;
-        spaceId = folly::to<GraphSpaceID>(dir);
-        if (!options_.partMan_->spaceExist(storeSvcAddr_, spaceId).ok()) {
-          if (FLAGS_auto_remove_invalid_space) {
-            auto spaceDir = folly::stringPrintf("%s/%s", rootPath.c_str(), dir.c_str());
-            removeSpaceDir(spaceDir);
-          }
-          continue;
+      GraphSpaceID spaceId;
+      spaceId = folly::to<GraphSpaceID>(dir);
+      if (!options_.partMan_->spaceExist(storeSvcAddr_, spaceId).ok()) {
+        if (FLAGS_auto_remove_invalid_space) {
+          auto spaceDir = folly::stringPrintf("%s/%s", rootPath.c_str(), dir.c_str());
+          removeSpaceDir(spaceDir);
         }
-
-        KVEngine* enginePtr = nullptr;
-        {
-          folly::RWSpinLock::WriteHolder wh(&lock_);
-          auto engine = newEngine(spaceId, path, options_.walPath_);
-          auto spaceIt = this->spaces_.find(spaceId);
-          if (spaceIt == this->spaces_.end()) {
-            LOG(INFO) << "Load space " << spaceId << " from disk";
-            spaceIt = this->spaces_.emplace(spaceId, std::make_unique<SpacePartInfo>()).first;
-          }
-          spaceIt->second->engines_.emplace_back(std::move(engine));
-          enginePtr = spaceIt->second->engines_.back().get();
-        }
-
-        // partIds is the partition in this host waiting to open
-        std::vector<PartitionID> partIds;
-        for (auto& partId : enginePtr->allParts()) {
-          if (!options_.partMan_->partExist(storeSvcAddr_, spaceId, partId).ok()) {
-            LOG(INFO) << "Part " << partId << " does not exist any more, remove it!";
-            enginePtr->removePart(partId);
-            continue;
-          } else {
-            auto spacePart = std::make_pair(spaceId, partId);
-            if (spacePartIdSet.find(spacePart) == spacePartIdSet.end()) {
-              spacePartIdSet.emplace(spacePart);
-              partIds.emplace_back(partId);
-            }
-          }
-        }
-        if (partIds.empty()) {
-          continue;
-        }
-
-        std::atomic<size_t> counter(partIds.size());
-        folly::Baton<true, std::atomic> baton;
-        LOG(INFO) << "Need to open " << partIds.size() << " parts of space " << spaceId;
-        for (auto& partId : partIds) {
-          bgWorkers_->addTask([spaceId, partId, enginePtr, &counter, &baton, this]() mutable {
-            auto part = newPart(spaceId, partId, enginePtr, false, {});
-            LOG(INFO) << "Load part " << spaceId << ", " << partId << " from disk";
-
-            {
-              folly::RWSpinLock::WriteHolder holder(&lock_);
-              auto iter = spaces_.find(spaceId);
-              CHECK(iter != spaces_.end());
-              iter->second->parts_.emplace(partId, part);
-            }
-            counter.fetch_sub(1);
-            if (counter.load() == 0) {
-              baton.post();
-            }
-          });
-        }
-        baton.wait();
-        LOG(INFO) << "Load space " << spaceId << " complete";
-      } catch (std::exception& e) {
-        LOG(FATAL) << "Invalid data directory \"" << dir << "\"";
+        continue;
       }
+
+      KVEngine* enginePtr = nullptr;
+      {
+        folly::RWSpinLock::WriteHolder wh(&lock_);
+        auto engine = newEngine(spaceId, path, options_.walPath_);
+        auto spaceIt = this->spaces_.find(spaceId);
+        if (spaceIt == this->spaces_.end()) {
+          LOG(INFO) << "Load space " << spaceId << " from disk";
+          spaceIt = this->spaces_.emplace(spaceId, std::make_unique<SpacePartInfo>()).first;
+        }
+        spaceIt->second->engines_.emplace_back(std::move(engine));
+        enginePtr = spaceIt->second->engines_.back().get();
+      }
+
+      // partIds is the partition in this host waiting to open
+      std::vector<PartitionID> partIds;
+      for (auto& partId : enginePtr->allParts()) {
+        if (!options_.partMan_->partExist(storeSvcAddr_, spaceId, partId).ok()) {
+          LOG(INFO) << "Part " << partId << " does not exist any more, remove it!";
+          enginePtr->removePart(partId);
+          continue;
+        } else {
+          auto spacePart = std::make_pair(spaceId, partId);
+          if (spacePartIdSet.find(spacePart) == spacePartIdSet.end()) {
+            spacePartIdSet.emplace(spacePart);
+            partIds.emplace_back(partId);
+          }
+        }
+      }
+      if (partIds.empty()) {
+        continue;
+      }
+
+      std::atomic<size_t> counter(partIds.size());
+      folly::Baton<true, std::atomic> baton;
+      LOG(INFO) << "Need to open " << partIds.size() << " parts of space " << spaceId;
+      for (auto& partId : partIds) {
+        bgWorkers_->addTask([spaceId, partId, enginePtr, &counter, &baton, this]() mutable {
+          auto part = newPart(spaceId, partId, enginePtr, false, {});
+          LOG(INFO) << "Load part " << spaceId << ", " << partId << " from disk";
+
+          {
+            folly::RWSpinLock::WriteHolder holder(&lock_);
+            auto iter = spaces_.find(spaceId);
+            CHECK(iter != spaces_.end());
+            iter->second->parts_.emplace(partId, part);
+          }
+          counter.fetch_sub(1);
+          if (counter.load() == 0) {
+            baton.post();
+          }
+        });
+      }
+      baton.wait();
+      LOG(INFO) << "Load space " << spaceId << " complete";
     }
   }
 }

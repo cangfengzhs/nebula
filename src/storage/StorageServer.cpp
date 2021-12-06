@@ -214,83 +214,72 @@ bool StorageServer::start() {
   }
 
   storageThread_.reset(new std::thread([this] {
-    try {
-      auto handler = std::make_shared<GraphStorageServiceHandler>(env_.get());
-      storageServer_ = std::make_unique<apache::thrift::ThriftServer>();
-      storageServer_->setPort(FLAGS_port);
-      storageServer_->setIdleTimeout(std::chrono::seconds(0));
-      storageServer_->setIOThreadPool(ioThreadPool_);
-      storageServer_->setThreadManager(workers_);
-      storageServer_->setStopWorkersOnStopListening(false);
-      storageServer_->setInterface(std::move(handler));
-      if (FLAGS_enable_ssl) {
-        storageServer_->setSSLConfig(nebula::sslContextConfig());
-      }
-
-      ServiceStatus expected = STATUS_UNINITIALIZED;
-      if (!storageSvcStatus_.compare_exchange_strong(expected, STATUS_RUNNING)) {
-        LOG(ERROR) << "Impossible! How could it happen!";
-        return;
-      }
-      LOG(INFO) << "The storage service start on " << localHost_;
-      storageServer_->serve();  // Will wait until the server shuts down
-    } catch (const std::exception& e) {
-      LOG(ERROR) << "Start storage service failed, error:" << e.what();
+    auto handler = std::make_shared<GraphStorageServiceHandler>(env_.get());
+    storageServer_ = std::make_unique<apache::thrift::ThriftServer>();
+    storageServer_->setPort(FLAGS_port);
+    storageServer_->setIdleTimeout(std::chrono::seconds(0));
+    storageServer_->setIOThreadPool(ioThreadPool_);
+    storageServer_->setThreadManager(workers_);
+    storageServer_->setStopWorkersOnStopListening(false);
+    storageServer_->setInterface(std::move(handler));
+    if (FLAGS_enable_ssl) {
+      storageServer_->setSSLConfig(nebula::sslContextConfig());
     }
+
+    ServiceStatus expected = STATUS_UNINITIALIZED;
+    if (!storageSvcStatus_.compare_exchange_strong(expected, STATUS_RUNNING)) {
+      LOG(ERROR) << "Impossible! How could it happen!";
+      return;
+    }
+    LOG(INFO) << "The storage service start on " << localHost_;
+    storageServer_->serve();  // Will wait until the server shuts down
+
     storageSvcStatus_.store(STATUS_STOPPED);
     LOG(INFO) << "The storage service stopped";
   }));
 
   adminThread_.reset(new std::thread([this] {
-    try {
-      auto handler = std::make_shared<StorageAdminServiceHandler>(env_.get());
-      auto adminAddr = Utils::getAdminAddrFromStoreAddr(localHost_);
-      adminServer_ = std::make_unique<apache::thrift::ThriftServer>();
-      adminServer_->setPort(adminAddr.port);
-      adminServer_->setIdleTimeout(std::chrono::seconds(0));
-      adminServer_->setIOThreadPool(ioThreadPool_);
-      adminServer_->setThreadManager(workers_);
-      adminServer_->setStopWorkersOnStopListening(false);
-      adminServer_->setInterface(std::move(handler));
-      if (FLAGS_enable_ssl) {
-        adminServer_->setSSLConfig(nebula::sslContextConfig());
-      }
-
-      ServiceStatus expected = STATUS_UNINITIALIZED;
-      if (!adminSvcStatus_.compare_exchange_strong(expected, STATUS_RUNNING)) {
-        LOG(ERROR) << "Impossible! How could it happen!";
-        return;
-      }
-      LOG(INFO) << "The admin service start on " << adminAddr;
-      adminServer_->serve();  // Will wait until the server shuts down
-    } catch (const std::exception& e) {
-      LOG(ERROR) << "Start admin service failed, error:" << e.what();
+    auto handler = std::make_shared<StorageAdminServiceHandler>(env_.get());
+    auto adminAddr = Utils::getAdminAddrFromStoreAddr(localHost_);
+    adminServer_ = std::make_unique<apache::thrift::ThriftServer>();
+    adminServer_->setPort(adminAddr.port);
+    adminServer_->setIdleTimeout(std::chrono::seconds(0));
+    adminServer_->setIOThreadPool(ioThreadPool_);
+    adminServer_->setThreadManager(workers_);
+    adminServer_->setStopWorkersOnStopListening(false);
+    adminServer_->setInterface(std::move(handler));
+    if (FLAGS_enable_ssl) {
+      adminServer_->setSSLConfig(nebula::sslContextConfig());
     }
+
+    ServiceStatus expected = STATUS_UNINITIALIZED;
+    if (!adminSvcStatus_.compare_exchange_strong(expected, STATUS_RUNNING)) {
+      LOG(ERROR) << "Impossible! How could it happen!";
+      return;
+    }
+    LOG(INFO) << "The admin service start on " << adminAddr;
+    adminServer_->serve();  // Will wait until the server shuts down
     adminSvcStatus_.store(STATUS_STOPPED);
     LOG(INFO) << "The admin service stopped";
   }));
 
   internalStorageThread_.reset(new std::thread([this] {
-    try {
-      auto handler = std::make_shared<InternalStorageServiceHandler>(env_.get());
-      auto internalAddr = Utils::getInternalAddrFromStoreAddr(localHost_);
-      internalStorageServer_ = std::make_unique<apache::thrift::ThriftServer>();
-      internalStorageServer_->setPort(internalAddr.port);
-      internalStorageServer_->setIdleTimeout(std::chrono::seconds(0));
-      internalStorageServer_->setIOThreadPool(ioThreadPool_);
-      internalStorageServer_->setThreadManager(workers_);
-      internalStorageServer_->setStopWorkersOnStopListening(false);
-      internalStorageServer_->setInterface(std::move(handler));
-      if (FLAGS_enable_ssl) {
-        internalStorageServer_->setSSLConfig(nebula::sslContextConfig());
-      }
-
-      internalStorageSvcStatus_.store(STATUS_RUNNING);
-      LOG(INFO) << "The internal storage service start(same with admin) on " << internalAddr;
-      internalStorageServer_->serve();  // Will wait until the server shuts down
-    } catch (const std::exception& e) {
-      LOG(ERROR) << "Start internal storage service failed, error:" << e.what();
+    auto handler = std::make_shared<InternalStorageServiceHandler>(env_.get());
+    auto internalAddr = Utils::getInternalAddrFromStoreAddr(localHost_);
+    internalStorageServer_ = std::make_unique<apache::thrift::ThriftServer>();
+    internalStorageServer_->setPort(internalAddr.port);
+    internalStorageServer_->setIdleTimeout(std::chrono::seconds(0));
+    internalStorageServer_->setIOThreadPool(ioThreadPool_);
+    internalStorageServer_->setThreadManager(workers_);
+    internalStorageServer_->setStopWorkersOnStopListening(false);
+    internalStorageServer_->setInterface(std::move(handler));
+    if (FLAGS_enable_ssl) {
+      internalStorageServer_->setSSLConfig(nebula::sslContextConfig());
     }
+
+    internalStorageSvcStatus_.store(STATUS_RUNNING);
+    LOG(INFO) << "The internal storage service start(same with admin) on " << internalAddr;
+    internalStorageServer_->serve();  // Will wait until the server shuts down
     internalStorageSvcStatus_.store(STATUS_STOPPED);
     LOG(INFO) << "The internal storage  service stopped";
   }));

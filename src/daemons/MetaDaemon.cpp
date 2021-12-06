@@ -329,7 +329,7 @@ int main(int argc, char* argv[]) {
 
   auto handler = std::make_shared<nebula::meta::MetaServiceHandler>(gKVStore.get(), gClusterId);
   LOG(INFO) << "The meta daemon start on " << localhost;
-  try {
+
     gServer = std::make_unique<apache::thrift::ThriftServer>();
     gServer->setPort(FLAGS_port);
     gServer->setIdleTimeout(std::chrono::seconds(0));  // No idle timeout on client connection
@@ -338,10 +338,6 @@ int main(int argc, char* argv[]) {
       gServer->setSSLConfig(nebula::sslContextConfig());
     }
     gServer->serve();  // Will wait until the server shuts down
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Exception thrown: " << e.what();
-    return EXIT_FAILURE;
-  }
 
   LOG(INFO) << "The meta Daemon stopped";
   return EXIT_SUCCESS;

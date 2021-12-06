@@ -41,16 +41,14 @@ bool ESStorageAdapter::checkPut(const std::string& ret, const std::string& cmd) 
   //        "_index": "index1",
   //        "_version": 1
   //    }
-  try {
-    auto root = folly::parseJson(ret);
-    auto result = root.find("result");
-    if (result != root.items().end() &&
-        (result->second.getString() == "created" || result->second.getString() == "updated")) {
-      return true;
-    }
-  } catch (std::exception& e) {
-    LOG(ERROR) << "result error : " << e.what();
+
+  auto root = folly::parseJson(ret);
+  auto result = root.find("result");
+  if (result != root.items().end() &&
+      (result->second.getString() == "created" || result->second.getString() == "updated")) {
+    return true;
   }
+
   VLOG(3) << "Command : " << cmd << "failed : " << ret;
   return false;
 }
@@ -107,14 +105,11 @@ bool ESStorageAdapter::checkBulk(const std::string& ret) const {
   //            }
   //        }]
   //    }
-  try {
-    auto root = folly::parseJson(ret);
-    auto result = root.find("errors");
-    if (result != root.items().end() && result->second.isBool() && !result->second.getBool()) {
-      return true;
-    }
-  } catch (std::exception& e) {
-    LOG(ERROR) << "result error : " << e.what();
+
+  auto root = folly::parseJson(ret);
+  auto result = root.find("errors");
+  if (result != root.items().end() && result->second.isBool() && !result->second.getBool()) {
+    return true;
   }
   VLOG(3) << "Bulk insert failed";
   VLOG(3) << ret;
