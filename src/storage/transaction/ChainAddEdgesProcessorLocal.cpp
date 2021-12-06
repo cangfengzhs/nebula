@@ -173,8 +173,11 @@ folly::SemiFuture<Code> ChainAddEdgesProcessorLocal::forwardToDelegateProcessor(
   auto futProc = proc->getFuture();
   auto [pro, fut] = folly::makePromiseContract<Code>();
   std::move(futProc).thenTry([&, p = std::move(pro)](auto&& t) mutable {
+    if (t.hasException()) {
+      LOG(ERROR) << t.exception().what();
+    }
     auto rc = Code::SUCCEEDED;
-    CHECK(!t.hasException());
+
     if (t.hasException()) {
       LOG(INFO) << "catch ex: " << t.exception().what();
       rc = Code::E_UNKNOWN;
