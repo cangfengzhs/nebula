@@ -89,13 +89,7 @@ void NebulaStore::loadPartFromDataPath() {
       LOG(INFO) << "Scan path \"" << rootPath << "/" << dir << "\"";
       try {
         GraphSpaceID spaceId;
-        try {
-          spaceId = folly::to<GraphSpaceID>(dir);
-        } catch (const std::exception& ex) {
-          LOG(ERROR) << "Data path invalid: " << ex.what();
-          continue;
-        }
-
+        spaceId = folly::to<GraphSpaceID>(dir);
         if (!options_.partMan_->spaceExist(storeSvcAddr_, spaceId).ok()) {
           if (FLAGS_auto_remove_invalid_space) {
             auto spaceDir = folly::stringPrintf("%s/%s", rootPath.c_str(), dir.c_str());

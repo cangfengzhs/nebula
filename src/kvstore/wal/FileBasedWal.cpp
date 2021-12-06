@@ -95,12 +95,7 @@ void FileBasedWal::scanAllWalFiles() {
     }
 
     int64_t startIdFromName;
-    try {
-      startIdFromName = folly::to<int64_t>(parts[0]);
-    } catch (const std::exception& ex) {
-      LOG(ERROR) << "Ignore bad file name \"" << fn << "\"";
-      continue;
-    }
+    startIdFromName = folly::to<int64_t>(parts[0]);
 
     WalFileInfoPtr info =
         std::make_shared<WalFileInfo>(FileUtils::joinPath(dir_, fn), startIdFromName);

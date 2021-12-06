@@ -175,12 +175,8 @@ auto GenericWorker::addTask(F &&f, Args &&... args) ->
   {
     std::lock_guard<std::mutex> guard(lock_);
     pendingTasks_.emplace_back([=] {
-      try {
-        (*task)();
-        promise->setValue(folly::unit);
-      } catch (const std::exception &ex) {
-        promise->setException(ex);
-      }
+      (*task)();
+      promise->setValue(folly::unit);
     });
   }
   notify();
@@ -211,12 +207,8 @@ auto GenericWorker::addDelayTask(size_t ms, F &&f, Args &&... args) ->
       std::bind(std::forward<F>(f), std::forward<Args>(args)...));
   auto future = promise->getSemiFuture();
   addTimerTask(ms, 0, [=] {
-    try {
-      (*task)();
-      promise->setValue(folly::unit);
-    } catch (const std::exception &ex) {
-      promise->setException(ex);
-    }
+    (*task)();
+    promise->setValue(folly::unit);
   });
   return future;
 }
