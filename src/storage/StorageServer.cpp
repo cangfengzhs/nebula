@@ -320,25 +320,6 @@ void StorageServer::stop() {
   ServiceStatus interStorageExpected = ServiceStatus::STATUS_RUNNING;
   internalStorageSvcStatus_.compare_exchange_strong(interStorageExpected, STATUS_STOPPED);
 
-  // kvstore need to stop back ground job before http server dctor
-  if (kvstore_) {
-    kvstore_->stop();
-  }
-
-  webSvc_.reset();
-
-  if (txnMan_) {
-    txnMan_->stop();
-  }
-  if (taskMgr_) {
-    taskMgr_->shutdown();
-  }
-  if (metaClient_) {
-    metaClient_->stop();
-  }
-  if (kvstore_) {
-    kvstore_.reset();
-  }
   if (adminServer_) {
     adminServer_->stop();
   }
@@ -347,6 +328,21 @@ void StorageServer::stop() {
   }
   if (storageServer_) {
     storageServer_->stop();
+  }
+  webSvc_.reset();
+  if (txnMan_) {
+    txnMan_->stop();
+  }
+  if (taskMgr_) {
+    taskMgr_->shutdown();
+  }
+  // kvstore need to stop back ground job before http server dctor
+  if (metaClient_) {
+    metaClient_->stop();
+  }
+  if (kvstore_) {
+    kvstore_->stop();
+    kvstore_.reset();
   }
 }
 

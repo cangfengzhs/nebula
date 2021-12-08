@@ -135,6 +135,7 @@ void RocksEngine::stop() {
     // Because we trigger compaction in WebService, we need to stop all
     // background work before we stop HttpServer.
     rocksdb::CancelAllBackgroundWork(db_.get(), true);
+    db_->Close();
   }
 }
 
