@@ -329,21 +329,29 @@ void StorageServer::stop() {
   if (storageServer_) {
     storageServer_->stop();
   }
-  adminServer_->join();
-  internalStorageServer_->join();
+  LOG(INFO) << "Wait for storage server exit";
   storageServer_->join();
+  LOG(INFO) << "Wait for admin server exit";
+  adminServer_->join();
+  LOG(INFO) << "Wait for internal server exit";
+  internalStorageServer_->join();
+
   webSvc_.reset();
+  LOG(INFO) << "Wait for transaction manager exit";
   if (txnMan_) {
     txnMan_->stop();
   }
-
+  LOG(INFO) << "Wait for task manager exit";
   if (taskMgr_) {
     taskMgr_->shutdown();
   }
   // kvstore need to stop back ground job before http server dctor
+  LOG(INFO) << "Wait for kv store exit";
   if (kvstore_) {
     kvstore_->stop();
   }
+  LOG(INFO) << "Wait for meta client exit";
+
   if (metaClient_) {
     metaClient_->stop();
   }
