@@ -39,7 +39,7 @@ class StorageServer final {
 
   void stop();
 
-  void waitUntilStop();
+  void join();
 
  private:
   enum ServiceStatus { STATUS_UNINITIALIZED = 0, STATUS_RUNNING = 1, STATUS_STOPPED = 2 };

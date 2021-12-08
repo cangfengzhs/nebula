@@ -51,6 +51,7 @@ extern Status setupBreakpad();
 
 std::unique_ptr<nebula::storage::StorageServer> gStorageServer;
 
+bool stopFlag = false;
 int main(int argc, char *argv[]) {
   google::SetVersionString(nebula::versionString());
   // Detect if the server has already been started
@@ -162,8 +163,15 @@ int main(int argc, char *argv[]) {
     gStorageServer->stop();
     return EXIT_FAILURE;
   }
-
-  gStorageServer->waitUntilStop();
+  while (true) {
+    if (stopFlag) {
+      gStorageServer->stop();
+      gStorageServer->join();
+      break;
+    } else {
+      std::this_thread::sleep_for(::std::chrono::seconds(1));
+    }
+  }
   LOG(INFO) << "The storage Daemon stopped";
   return EXIT_SUCCESS;
 }
@@ -179,9 +187,7 @@ void signalHandler(int sig) {
     case SIGINT:
     case SIGTERM:
       FLOG_INFO("Signal %d(%s) received, stopping this server", sig, ::strsignal(sig));
-      if (gStorageServer) {
-        gStorageServer->stop();
-      }
+      stopFlag = true;
       break;
     default:
       FLOG_ERROR("Signal %d(%s) received but ignored", sig, ::strsignal(sig));

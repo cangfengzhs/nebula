@@ -297,10 +297,10 @@ bool StorageServer::start() {
   return true;
 }
 
-void StorageServer::waitUntilStop() {
-  adminThread_->join();
-  storageThread_->join();
-  internalStorageThread_->join();
+void StorageServer::join() {
+  // adminThread_->join();
+  // storageThread_->join();
+  // internalStorageThread_->join();
 }
 
 void StorageServer::stop() {
@@ -329,20 +329,23 @@ void StorageServer::stop() {
   if (storageServer_) {
     storageServer_->stop();
   }
+  adminServer_->join();
+  internalStorageServer_->join();
+  storageServer_->join();
   webSvc_.reset();
   if (txnMan_) {
     txnMan_->stop();
   }
+
   if (taskMgr_) {
     taskMgr_->shutdown();
   }
   // kvstore need to stop back ground job before http server dctor
-  if (metaClient_) {
-    metaClient_->stop();
-  }
   if (kvstore_) {
     kvstore_->stop();
-    kvstore_.reset();
+  }
+  if (metaClient_) {
+    metaClient_->stop();
   }
 }
 
