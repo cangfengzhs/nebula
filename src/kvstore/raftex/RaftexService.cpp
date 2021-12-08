@@ -72,7 +72,7 @@ void RaftexService::initThriftServer(std::shared_ptr<folly::IOThreadPoolExecutor
     server_->setThreadManager(
         std::dynamic_pointer_cast<apache::thrift::concurrency::ThreadManager>(workers));
   }
-  server_->setStopWorkersOnStopListening(false);
+  server_->setStopWorkersOnStopListening(true);
 }
 
 bool RaftexService::setup() {
