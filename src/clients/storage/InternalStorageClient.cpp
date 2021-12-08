@@ -12,8 +12,8 @@ namespace storage {
 
 template <typename T>
 ::nebula::cpp2::ErrorCode getErrorCode(T& tryResp) {
-  if (t.hasException()) {
-    LOG(ERROR) << t.exception().what();
+  if (tryResp.hasException()) {
+    LOG(ERROR) << tryResp.exception().what();
   }
   if (!tryResp.hasValue()) {
     LOG(ERROR) << tryResp.exception().what();

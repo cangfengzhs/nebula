@@ -34,6 +34,7 @@ class RaftexService : public cpp2::RaftexServiceSvIf {
 
   bool start();
   void stop();
+  void stopListening();
   void waitUntilStop();
 
   void askForVote(cpp2::AskForVoteResponse& resp, const cpp2::AskForVoteRequest& req) override;

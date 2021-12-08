@@ -108,6 +108,7 @@ std::shared_ptr<folly::IOThreadPoolExecutor> RaftexService::getIOThreadPool() co
 std::shared_ptr<folly::Executor> RaftexService::getThreadManager() {
   return server_->getThreadManager();
 }
+void RaftexService::stopListening() { server_->stopListening(); }
 
 void RaftexService::stop() {
   int expected = STATUS_RUNNING;

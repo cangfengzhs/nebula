@@ -279,6 +279,9 @@ class NebulaStore : public KVStore, public Handler {
 
   ErrorOr<nebula::cpp2::ErrorCode, std::string> getProperty(GraphSpaceID spaceId,
                                                             const std::string& property) override;
+
+  void stopRaftListening() override;
+
   void registerOnNewPartAdded(const std::string& funcName,
                               std::function<void(std::shared_ptr<Part>&)> func,
                               std::vector<std::pair<GraphSpaceID, PartitionID>>& existParts);

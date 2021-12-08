@@ -218,6 +218,8 @@ class KVStore {
   virtual ErrorOr<nebula::cpp2::ErrorCode, std::string> getProperty(
       GraphSpaceID spaceId, const std::string& property) = 0;
 
+  virtual void stopRaftListening() = 0;
+
  protected:
   KVStore() = default;
 };

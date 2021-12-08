@@ -320,6 +320,24 @@ void StorageServer::stop() {
   ServiceStatus interStorageExpected = ServiceStatus::STATUS_RUNNING;
   internalStorageSvcStatus_.compare_exchange_strong(interStorageExpected, STATUS_STOPPED);
 
+  LOG(INFO) << "Stop storage server listening";
+  if (storageServer_) {
+    storageServer_->stopListening();
+  }
+  LOG(INFO) << "Stop internal server listening";
+
+  if (internalStorageServer_) {
+    internalStorageServer_->stopListening();
+  }
+  LOG(INFO) << "Stop admin server listening";
+
+  if (adminServer_) {
+    adminServer_->stopListening();
+  }
+  LOG(INFO) << "Stop raft server listening";
+  kvstore_->stopRaftListening();
+  LOG(INFO) << "Wait for workers finish";
+  workers_->join();
   if (adminServer_) {
     adminServer_->stop();
   }

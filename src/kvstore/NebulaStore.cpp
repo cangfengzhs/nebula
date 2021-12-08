@@ -1184,7 +1184,7 @@ ErrorOr<nebula::cpp2::ErrorCode, std::string> NebulaStore::getProperty(
   }
   return folly::toJson(obj);
 }
-
+void NebulaStore::stopRaftListening() { raftService_->stopListening(); }
 void NebulaStore::registerOnNewPartAdded(
     const std::string& funcName,
     std::function<void(std::shared_ptr<Part>&)> func,
