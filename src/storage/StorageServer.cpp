@@ -219,8 +219,6 @@ bool StorageServer::start() {
     storageServer_->setPort(FLAGS_port);
     storageServer_->setIdleTimeout(std::chrono::seconds(0));
     storageServer_->setIOThreadPool(ioThreadPool_);
-    storageServer_->setThreadManager(workers_);
-    storageServer_->setStopWorkersOnStopListening(false);
     storageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       storageServer_->setSSLConfig(nebula::sslContextConfig());
@@ -245,8 +243,6 @@ bool StorageServer::start() {
     adminServer_->setPort(adminAddr.port);
     adminServer_->setIdleTimeout(std::chrono::seconds(0));
     adminServer_->setIOThreadPool(ioThreadPool_);
-    adminServer_->setThreadManager(workers_);
-    adminServer_->setStopWorkersOnStopListening(false);
     adminServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       adminServer_->setSSLConfig(nebula::sslContextConfig());
@@ -270,8 +266,7 @@ bool StorageServer::start() {
     internalStorageServer_->setPort(internalAddr.port);
     internalStorageServer_->setIdleTimeout(std::chrono::seconds(0));
     internalStorageServer_->setIOThreadPool(ioThreadPool_);
-    internalStorageServer_->setThreadManager(workers_);
-    internalStorageServer_->setStopWorkersOnStopListening(false);
+
     internalStorageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       internalStorageServer_->setSSLConfig(nebula::sslContextConfig());
