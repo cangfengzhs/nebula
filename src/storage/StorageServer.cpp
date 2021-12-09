@@ -220,7 +220,7 @@ bool StorageServer::start() {
     storageServer_->setIdleTimeout(std::chrono::seconds(0));
     storageServer_->setIOThreadPool(ioThreadPool_);
     storageServer_->setThreadManager(workers_);
-    storageServer_->setStopWorkersOnStopListening(true);
+    storageServer_->setStopWorkersOnStopListening(false);
     storageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       storageServer_->setSSLConfig(nebula::sslContextConfig());
@@ -246,7 +246,7 @@ bool StorageServer::start() {
     adminServer_->setIdleTimeout(std::chrono::seconds(0));
     adminServer_->setIOThreadPool(ioThreadPool_);
     adminServer_->setThreadManager(workers_);
-    adminServer_->setStopWorkersOnStopListening(true);
+    adminServer_->setStopWorkersOnStopListening(false);
     adminServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       adminServer_->setSSLConfig(nebula::sslContextConfig());
@@ -271,7 +271,7 @@ bool StorageServer::start() {
     internalStorageServer_->setIdleTimeout(std::chrono::seconds(0));
     internalStorageServer_->setIOThreadPool(ioThreadPool_);
     internalStorageServer_->setThreadManager(workers_);
-    internalStorageServer_->setStopWorkersOnStopListening(true);
+    internalStorageServer_->setStopWorkersOnStopListening(false);
     internalStorageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       internalStorageServer_->setSSLConfig(nebula::sslContextConfig());
@@ -298,9 +298,9 @@ bool StorageServer::start() {
 }
 
 void StorageServer::join() {
-  // adminThread_->join();
-  // storageThread_->join();
-  // internalStorageThread_->join();
+  adminThread_->join();
+  storageThread_->join();
+  internalStorageThread_->join();
 }
 
 void StorageServer::stop() {
@@ -336,8 +336,6 @@ void StorageServer::stop() {
   }
   LOG(INFO) << "Stop raft server listening";
   kvstore_->stopRaftListening();
-  LOG(INFO) << "Wait for workers finish";
-  workers_->join();
   if (adminServer_) {
     adminServer_->stop();
   }
@@ -353,7 +351,8 @@ void StorageServer::stop() {
   adminServer_->join();
   LOG(INFO) << "Wait for internal server exit";
   internalStorageServer_->join();
-
+  LOG(INFO) << "Wait for workers finish";
+  workers_->join();
   webSvc_.reset();
   LOG(INFO) << "Wait for transaction manager exit";
   if (txnMan_) {
