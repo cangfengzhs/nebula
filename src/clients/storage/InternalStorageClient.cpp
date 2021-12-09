@@ -12,9 +12,6 @@ namespace storage {
 
 template <typename T>
 ::nebula::cpp2::ErrorCode getErrorCode(T& tryResp) {
-  if (tryResp.hasException()) {
-    LOG(ERROR) << tryResp.exception().what();
-  }
   if (!tryResp.hasValue()) {
     LOG(ERROR) << tryResp.exception().what();
     return nebula::cpp2::ErrorCode::E_RPC_FAILURE;
@@ -71,8 +68,6 @@ void InternalStorageClient::chainUpdateEdge(cpp2::UpdateEdgeRequest& reversedReq
       });
 
   std::move(resp).thenTry([=, p = std::move(p)](auto&& t) mutable {
-    CHECK(!t.hasException());
-
     auto code = getErrorCode(t);
     if (code == ::nebula::cpp2::ErrorCode::E_LEADER_CHANGED) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -110,7 +105,6 @@ void InternalStorageClient::chainAddEdges(cpp2::AddEdgesRequest& directReq,
       });
 
   std::move(resp).thenTry([=, p = std::move(p)](auto&& t) mutable {
-    CHECK(!t.hasException());
     auto code = getErrorCode(t);
     if (code == nebula::cpp2::ErrorCode::E_LEADER_CHANGED) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));

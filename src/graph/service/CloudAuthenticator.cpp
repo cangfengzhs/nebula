@@ -37,12 +37,16 @@ bool CloudAuthenticator::auth(const std::string& user, const std::string& passwo
     return false;
   }
 
-  auto json = folly::parseJson(result.value());
-  if (json["code"].asString().compare("0") != 0) {
-    LOG(ERROR) << "Cloud authentication failed, user: " << user;
+  try {
+    auto json = folly::parseJson(result.value());
+    if (json["code"].asString().compare("0") != 0) {
+      LOG(ERROR) << "Cloud authentication failed, user: " << user;
+      return false;
+    }
+  } catch (std::exception& e) {
+    LOG(ERROR) << "Invalid json: " << e.what();
     return false;
   }
-
   return true;
 }
 

@@ -65,9 +65,13 @@ Status Configuration::parseFromFile(const std::string &filename) {
 }
 
 Status Configuration::parseFromString(const std::string &content) {
-  auto json = folly::parseJson(content);
-  content_ = std::make_unique<folly::dynamic>(std::move(json));
-
+  try {
+    auto json = folly::parseJson(content);
+    content_ = std::make_unique<folly::dynamic>(std::move(json));
+  } catch (std::exception &e) {
+    LOG(ERROR) << e.what();
+    return Status::Error("Illegal format (%s)", e.what());
+  }
   return Status::OK();
 }
 
@@ -173,7 +177,12 @@ Status Configuration::fetchAsIntArray(const char *key, std::vector<int64_t> &val
   }
 
   for (auto &entry : iter->second) {
-    val.emplace_back(entry.asInt());
+    try {
+      val.emplace_back(entry.asInt());
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }
@@ -189,7 +198,12 @@ Status Configuration::fetchAsDoubleArray(const char *key, std::vector<double> &v
   }
 
   for (auto &entry : iter->second) {
-    val.emplace_back(entry.asDouble());
+    try {
+      val.emplace_back(entry.asDouble());
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }
@@ -205,7 +219,12 @@ Status Configuration::fetchAsBoolArray(const char *key, std::vector<bool> &val) 
   }
 
   for (auto &entry : iter->second) {
-    val.emplace_back(entry.asBool());
+    try {
+      val.emplace_back(entry.asBool());
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }
@@ -221,7 +240,12 @@ Status Configuration::fetchAsStringArray(const char *key, std::vector<std::strin
   }
 
   for (auto &entry : iter->second) {
-    val.emplace_back(entry.asString());
+    try {
+      val.emplace_back(entry.asString());
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }
@@ -229,7 +253,12 @@ Status Configuration::fetchAsStringArray(const char *key, std::vector<std::strin
 Status Configuration::forEachKey(std::function<void(const std::string &)> processor) const {
   DCHECK(content_ != nullptr);
   for (auto &key : content_->keys()) {
-    processor(key.asString());
+    try {
+      processor(key.asString());
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }
@@ -238,7 +267,12 @@ Status Configuration::forEachItem(
     std::function<void(const std::string &, const folly::dynamic &)> processor) const {
   DCHECK(content_ != nullptr);
   for (auto &item : content_->items()) {
-    processor(item.first.asString(), item.second);
+    try {
+      processor(item.first.asString(), item.second);
+    } catch (const std::exception &ex) {
+      // Avoid format secure by literal
+      return Status::Error("%s", ex.what());
+    }
   }
   return Status::OK();
 }

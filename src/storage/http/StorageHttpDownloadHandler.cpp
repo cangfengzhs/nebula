@@ -148,7 +148,13 @@ bool StorageHttpDownloadHandler::downloadSSTFiles(const std::string& hdfsHost,
 
   for (auto& part : parts) {
     PartitionID partId;
-    partId = folly::to<PartitionID>(part);
+    try {
+      partId = folly::to<PartitionID>(part);
+    } catch (const std::exception& ex) {
+      isRunning.clear();
+      LOG(ERROR) << "Invalid part: \"" << part << "\"";
+      return false;
+    }
 
     auto downloader = [hdfsHost, hdfsPort, hdfsPath, partId, this]() {
       auto hdfsPartPath = folly::stringPrintf("%s/%d", hdfsPath.c_str(), partId);

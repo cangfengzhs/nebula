@@ -132,7 +132,11 @@ Status WebService::start() {
         },
         [&](std::exception_ptr eptr) {
           CHECK(eptr);
-          std::rethrow_exception(eptr);
+          try {
+            std::rethrow_exception(eptr);
+          } catch (const std::exception& e) {
+            status = Status::Error("%s", e.what());
+          }
           {
             std::lock_guard<std::mutex> g(mut);
             serverStartedDone = true;

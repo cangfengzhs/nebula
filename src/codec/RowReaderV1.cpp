@@ -447,8 +447,11 @@ int32_t RowReaderV1::readInteger(int64_t offset, int64_t& v) const noexcept {
   const uint8_t* start = reinterpret_cast<const uint8_t*>(&(buffer_[offset]));
   folly::ByteRange range(start, buffer_.size() - offset);
 
-  v = folly::decodeVarint(range);
-
+  try {
+    v = folly::decodeVarint(range);
+  } catch (const std::exception& ex) {
+    return -1;
+  }
   return range.begin() - start;
 }
 

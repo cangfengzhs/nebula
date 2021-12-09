@@ -282,7 +282,12 @@ StatusOr<std::vector<HostAddr>> NetworkUtils::toHosts(const std::string& peersSt
     }
 
     int32_t port;
-    port = folly::to<int32_t>(addrPort.subpiece(pos + 1));
+    try {
+      port = folly::to<int32_t>(addrPort.subpiece(pos + 1));
+    } catch (const std::exception& ex) {
+      return Status::Error("Bad port number, error: %s", ex.what());
+    }
+
     auto addr = addrPort.subpiece(0, pos).toString();
     hosts.emplace_back(std::move(addr), port);
   }

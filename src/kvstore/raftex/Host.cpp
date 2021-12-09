@@ -251,7 +251,6 @@ void Host::appendLogsInternal(folly::EventBase* eb, std::shared_ptr<cpp2::Append
                    return;
                  })
       .thenError(folly::tag_t<std::exception>{}, [self = shared_from_this()](std::exception&& ex) {
-        LOG(FATAL) << "appendLogsInternal fatal";
         VLOG(2) << self->idStr_ << ex.what();
         cpp2::AppendLogResponse r;
         r.set_error_code(cpp2::ErrorCode::E_RPC_EXCEPTION);
@@ -384,7 +383,6 @@ folly::Future<cpp2::HeartbeatResponse> Host::sendHeartbeat(folly::EventBase* eb,
       .then([self = shared_from_this(),
              pro = std::move(promise)](folly::Try<cpp2::HeartbeatResponse>&& t) mutable {
         VLOG(3) << self->idStr_ << "heartbeat call got response";
-        CHECK(!t.hasException());
         if (t.hasException()) {
           cpp2::HeartbeatResponse resp;
           resp.set_error_code(cpp2::ErrorCode::E_RPC_EXCEPTION);

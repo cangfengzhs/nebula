@@ -40,8 +40,13 @@ const Value& RelationalExpression::eval(ExpressionContext& ctx) {
       } else if ((!lhs.isNull() && !lhs.isStr()) || (!rhs.isNull() && !rhs.isStr())) {
         result_ = Value::kNullBadType;
       } else if (lhs.isStr() && rhs.isStr()) {
-        const auto& r = ctx.getRegex(rhs.getStr());
-        result_ = std::regex_match(lhs.getStr(), r);
+        try {
+          const auto& r = ctx.getRegex(rhs.getStr());
+          result_ = std::regex_match(lhs.getStr(), r);
+        } catch (const std::exception& ex) {
+          LOG(ERROR) << "Regex match error: " << ex.what();
+          result_ = Value::kNullBadType;
+        }
       } else {
         result_ = Value::kNullValue;
       }

@@ -164,14 +164,18 @@ void StatsManager::addValue(const CounterId& id, VT value) {
 // static
 bool StatsManager::strToPct(folly::StringPiece part, double& pct) {
   static const int32_t divisors[] = {1, 1, 10, 100, 1000, 10000};
-  size_t len = part.size() - 1;
-  if (len > 0 && len <= 6) {
-    auto digits = folly::StringPiece(&(part[1]), len);
-    pct = folly::to<double>(digits) / divisors[len - 1];
-    return true;
-  } else {
-    LOG(ERROR) << "Precision " << part.toString() << " is too long";
-    return false;
+  try {
+    size_t len = part.size() - 1;
+    if (len > 0 && len <= 6) {
+      auto digits = folly::StringPiece(&(part[1]), len);
+      pct = folly::to<double>(digits) / divisors[len - 1];
+      return true;
+    } else {
+      LOG(ERROR) << "Precision " << part.toString() << " is too long";
+      return false;
+    }
+  } catch (const std::exception& ex) {
+    LOG(ERROR) << "Failed to convert the digits to a double: " << ex.what();
   }
 
   return false;

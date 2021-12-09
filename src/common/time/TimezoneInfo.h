@@ -24,7 +24,12 @@ class Timezone {
   Timezone() = default;
 
   static NG_MUST_USE_RESULT Status init() {
-    tzdb.load_from_file(FLAGS_timezone_file);
+    try {
+      tzdb.load_from_file(FLAGS_timezone_file);
+    } catch (const std::exception &e) {
+      return Status::Error(
+          "Invalid timezone file `%s', exception: `%s'.", FLAGS_timezone_file.c_str(), e.what());
+    }
     return Status::OK();
   }
 
@@ -39,7 +44,12 @@ class Timezone {
   // see the posix timezone literal format in
   // https://man7.org/linux/man-pages/man3/tzset.3.html
   NG_MUST_USE_RESULT Status parsePosixTimezone(const std::string &posixTimezone) {
-    zoneInfo_.reset(new ::boost::local_time::posix_time_zone(posixTimezone));
+    try {
+      zoneInfo_.reset(new ::boost::local_time::posix_time_zone(posixTimezone));
+    } catch (const std::exception &e) {
+      return Status::Error(
+          "Malformed timezone format: `%s', exception: `%s'.", posixTimezone.c_str(), e.what());
+    }
     return Status::OK();
   }
 

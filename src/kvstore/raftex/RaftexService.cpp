@@ -76,10 +76,16 @@ void RaftexService::initThriftServer(std::shared_ptr<folly::IOThreadPoolExecutor
 }
 
 bool RaftexService::setup() {
-  server_->setup();
-  serverPort_ = server_->getAddress().getPort();
+  try {
+    server_->setup();
+    serverPort_ = server_->getAddress().getPort();
 
-  LOG(INFO) << "Starting the Raftex Service on " << serverPort_;
+    LOG(INFO) << "Starting the Raftex Service on " << serverPort_;
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "Setup the Raftex Service failed, error: " << e.what();
+    return false;
+  }
+
   return true;
 }
 

@@ -57,12 +57,17 @@ std::shared_ptr<ClientType> ThriftClientManager<ClientType>::client(const HostAd
    * */
   HostAddr resolved = host;
   if (!folly::IPAddress::validate(resolved.host)) {
-    folly::SocketAddress socketAddr(resolved.host, resolved.port, true);
-    std::ostringstream oss;
-    oss << "resolve " << resolved << " as ";
-    resolved.host = socketAddr.getAddressStr();
-    oss << resolved;
-    LOG(INFO) << oss.str();
+    try {
+      folly::SocketAddress socketAddr(resolved.host, resolved.port, true);
+      std::ostringstream oss;
+      oss << "resolve " << resolved << " as ";
+      resolved.host = socketAddr.getAddressStr();
+      oss << resolved;
+      LOG(INFO) << oss.str();
+    } catch (const std::exception& e) {
+      // if we resolve failed, just return a connection, we will retry later
+      LOG(ERROR) << e.what();
+    }
   }
 
   VLOG(2) << "Connecting to " << host << " for " << ++connectionCount << " times";

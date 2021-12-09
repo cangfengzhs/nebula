@@ -187,7 +187,6 @@ folly::SemiFuture<StorageRpcResponse<Response>> StorageClientBase<ClientType>::c
                      })
           .thenError(folly::tag_t<std::exception>{},
                      [this, context, host, spaceId](std::exception&& ex) {
-                       LOG(FATAL) << ex.what();
                        auto& r = context->findRequest(host);
                        auto parts = getReqPartsId(r);
                        LOG(ERROR) << "Request to " << host << " failed: " << ex.what();
@@ -280,7 +279,6 @@ void StorageClientBase<ClientType>::getResponseImpl(
             .thenError(folly::tag_t<std::exception>{},
                        [spaceId, partsId = std::move(partsId), host, pro, this](
                            std::exception&& ex) mutable {
-                         LOG(FATAL) << ex.what();
                          // exception occurred during RPC
                          pro->setValue(Status::Error(
                              folly::stringPrintf("RPC failure in StorageClient: %s", ex.what())));

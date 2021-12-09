@@ -300,8 +300,15 @@ void AdminTaskManager::runSubTask(TaskHandle handle) {
   if (auto subTask = task->subtasks_.try_take_for(take_dura)) {
     if (task->status() == nebula::cpp2::ErrorCode::SUCCEEDED) {
       auto rc = nebula::cpp2::ErrorCode::E_UNKNOWN;
-      rc = subTask->invoke();
-
+      try {
+        rc = subTask->invoke();
+      } catch (std::exception& ex) {
+        LOG(ERROR) << folly::sformat(
+            "task({}, {}) invoke() throw exception: {}", handle.first, handle.second, ex.what());
+      } catch (...) {
+        LOG(ERROR) << folly::sformat(
+            "task({}, {}) invoke() throw unknown exception", handle.first, handle.second);
+      }
       task->subTaskFinish(rc);
     }
 

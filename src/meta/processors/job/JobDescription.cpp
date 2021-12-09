@@ -39,27 +39,30 @@ JobDescription::JobDescription(JobID id,
 
 ErrorOr<nebula::cpp2::ErrorCode, JobDescription> JobDescription::makeJobDescription(
     folly::StringPiece rawkey, folly::StringPiece rawval) {
-  if (!isJobKey(rawkey)) {
-    return nebula::cpp2::ErrorCode::E_INVALID_JOB;
-  }
-  auto key = parseKey(rawkey);
+  try {
+    if (!isJobKey(rawkey)) {
+      return nebula::cpp2::ErrorCode::E_INVALID_JOB;
+    }
+    auto key = parseKey(rawkey);
 
-  if (!isSupportedValue(rawval)) {
-    LOG(ERROR) << "not supported data ver of job " << key;
-    return nebula::cpp2::ErrorCode::E_INVALID_JOB;
-  }
-  auto tup = parseVal(rawval);
+    if (!isSupportedValue(rawval)) {
+      LOG(ERROR) << "not supported data ver of job " << key;
+      return nebula::cpp2::ErrorCode::E_INVALID_JOB;
+    }
+    auto tup = parseVal(rawval);
 
-  auto cmd = std::get<0>(tup);
-  auto paras = std::get<1>(tup);
-  for (auto p : paras) {
-    LOG(INFO) << "p = " << p;
+    auto cmd = std::get<0>(tup);
+    auto paras = std::get<1>(tup);
+    for (auto p : paras) {
+      LOG(INFO) << "p = " << p;
+    }
+    auto status = std::get<2>(tup);
+    auto startTime = std::get<3>(tup);
+    auto stopTime = std::get<4>(tup);
+    return JobDescription(key, cmd, paras, status, startTime, stopTime);
+  } catch (std::exception& ex) {
+    LOG(ERROR) << ex.what();
   }
-  auto status = std::get<2>(tup);
-  auto startTime = std::get<3>(tup);
-  auto stopTime = std::get<4>(tup);
-  return JobDescription(key, cmd, paras, status, startTime, stopTime);
-
   return nebula::cpp2::ErrorCode::E_INVALID_JOB;
 }
 
