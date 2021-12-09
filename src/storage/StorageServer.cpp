@@ -336,12 +336,7 @@ void StorageServer::stop() {
   if (storageServer_) {
     storageServer_->stop();
   }
-  LOG(INFO) << "Wait for storage server exit";
-  storageServer_->join();
-  LOG(INFO) << "Wait for admin server exit";
-  adminServer_->join();
-  LOG(INFO) << "Wait for internal server exit";
-  internalStorageServer_->join();
+
   LOG(INFO) << "Wait for workers finish";
   workers_->join();
   webSvc_.reset();
