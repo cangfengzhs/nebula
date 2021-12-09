@@ -65,14 +65,14 @@ void RaftexService::initThriftServer(std::shared_ptr<folly::IOThreadPoolExecutor
   }
   server_->setPort(port);
   server_->setIdleTimeout(std::chrono::seconds(0));
-  if (pool != nullptr) {
-    server_->setIOThreadPool(pool);
-  }
-  if (workers != nullptr) {
-    server_->setThreadManager(
-        std::dynamic_pointer_cast<apache::thrift::concurrency::ThreadManager>(workers));
-  }
-  server_->setStopWorkersOnStopListening(true);
+  // if (pool != nullptr) {
+  //   server_->setIOThreadPool(pool);
+  // }
+  // if (workers != nullptr) {
+  //   server_->setThreadManager(
+  //       std::dynamic_pointer_cast<apache::thrift::concurrency::ThreadManager>(workers));
+  // }
+  // server_->setStopWorkersOnStopListening(false);
 }
 
 bool RaftexService::setup() {
