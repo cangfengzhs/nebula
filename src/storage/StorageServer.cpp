@@ -218,6 +218,7 @@ bool StorageServer::start() {
     storageServer_ = std::make_unique<apache::thrift::ThriftServer>();
     storageServer_->setPort(FLAGS_port);
     storageServer_->setIdleTimeout(std::chrono::seconds(0));
+    storageServer_->setIOThreadPool(ioThreadPool_);
     storageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       storageServer_->setSSLConfig(nebula::sslContextConfig());
@@ -241,6 +242,7 @@ bool StorageServer::start() {
     adminServer_ = std::make_unique<apache::thrift::ThriftServer>();
     adminServer_->setPort(adminAddr.port);
     adminServer_->setIdleTimeout(std::chrono::seconds(0));
+    adminServer_->setIOThreadPool(ioThreadPool_);
     adminServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       adminServer_->setSSLConfig(nebula::sslContextConfig());
@@ -263,6 +265,7 @@ bool StorageServer::start() {
     internalStorageServer_ = std::make_unique<apache::thrift::ThriftServer>();
     internalStorageServer_->setPort(internalAddr.port);
     internalStorageServer_->setIdleTimeout(std::chrono::seconds(0));
+    internalStorageServer_->setIOThreadPool(ioThreadPool_);
     internalStorageServer_->setInterface(std::move(handler));
     if (FLAGS_enable_ssl) {
       internalStorageServer_->setSSLConfig(nebula::sslContextConfig());
