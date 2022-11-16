@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include <thrift/lib/cpp/concurrency/ThreadManager.h>
 
+#include <map>
+
 #include "common/base/Base.h"
 #include "common/fs/FileUtils.h"
 #include "common/fs/TempDir.h"
@@ -55,7 +57,11 @@ class DummyListener : public Listener {
                  schemaMan) {}
 
   std::vector<KV> data() {
-    return data_;
+    std::vector<KV> ret;
+    for (auto& [key, value] : data_) {
+      ret.emplace_back(key, value);
+    }
+    return ret;
   }
 
   std::tuple<cpp2::ErrorCode, int64_t, int64_t> commitSnapshot(const std::vector<std::string>& data,
@@ -88,10 +94,30 @@ class DummyListener : public Listener {
  protected:
   void init() override {}
 
-  bool apply(const std::vector<KV>& kvs) override {
-    for (const auto& kv : kvs) {
-      data_.emplace_back(kv);
+  bool apply(const BatchHolder& batch) override {
+    for (auto& log : batch.getBatch()) {
+      switch (std::get<0>(log)) {
+        case BatchLogType::OP_BATCH_PUT: {
+          data_[std::get<1>(log)] = std::get<2>(log);
+          break;
+        }
+        case BatchLogType::OP_BATCH_REMOVE: {
+          data_.erase(std::get<1>(log));
+          break;
+        }
+        case BatchLogType::OP_BATCH_REMOVE_RANGE: {
+          auto iter = data_.lower_bound(std::get<1>(log));
+          while (iter != data_.end()) {
+            if (iter->first < std::get<2>(log)) {
+              iter = data_.erase(iter);
+            } else {
+              break;
+            }
+          }
+        }
+      }
     }
+
     return true;
   }
 
@@ -116,7 +142,7 @@ class DummyListener : public Listener {
   }
 
  private:
-  std::vector<KV> data_;
+  std::map<std::string, std::string> data_;
   std::pair<int64_t, int64_t> committedSnapshot_{0, 0};
   int32_t snapshotBatchCount_{0};
 };
@@ -353,9 +379,14 @@ TEST_P(ListenerBasicTest, SimpleTest) {
     auto dummy = dummies_[partId];
     const auto& data = dummy->data();
     CHECK_EQ(100, data.size());
+    std::map<std::string, std::string> expect;
     for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++) {
-      CHECK_EQ(folly::stringPrintf("key_%d_%d", partId, i), data[i].first);
-      CHECK_EQ(folly::stringPrintf("val_%d_%d", partId, i), data[i].second);
+      expect[fmt::format("key_{}_{}", partId, i)] = fmt::format("val_{}_{}", partId, i);
+    }
+    auto iter = expect.begin();
+    for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++, iter++) {
+      CHECK_EQ(iter->first, data[i].first);
+      CHECK_EQ(iter->second, data[i].second);
     }
   }
 }
@@ -423,9 +454,14 @@ TEST_P(ListenerBasicTest, TransLeaderTest) {
     auto dummy = dummies_[partId];
     const auto& data = dummy->data();
     CHECK_EQ(200, data.size());
+    std::map<std::string, std::string> expect;
     for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++) {
-      CHECK_EQ(folly::stringPrintf("key_%d_%d", partId, i), data[i].first);
-      CHECK_EQ(folly::stringPrintf("val_%d_%d", partId, i), data[i].second);
+      expect[fmt::format("key_{}_{}", partId, i)] = fmt::format("val_{}_{}", partId, i);
+    }
+    auto iter = expect.begin();
+    for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++, iter++) {
+      CHECK_EQ(iter->first, data[i].first);
+      CHECK_EQ(iter->second, data[i].second);
     }
   }
 }
@@ -457,9 +493,14 @@ TEST_P(ListenerBasicTest, CommitSnapshotTest) {
     auto dummy = dummies_[partId];
     const auto& data = dummy->data();
     CHECK_EQ(100, data.size());
+    std::map<std::string, std::string> expect;
     for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++) {
-      CHECK_EQ(folly::stringPrintf("key_%d_%d", partId, i), data[i].first);
-      CHECK_EQ(folly::stringPrintf("val_%d_%d", partId, i), data[i].second);
+      expect[fmt::format("key_{}_{}", partId, i)] = fmt::format("val_{}_{}", partId, i);
+    }
+    auto iter = expect.begin();
+    for (int32_t i = 0; i < static_cast<int32_t>(data.size()); i++, iter++) {
+      CHECK_EQ(iter->first, data[i].first);
+      CHECK_EQ(iter->second, data[i].second);
     }
   }
 }

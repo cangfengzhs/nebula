@@ -23,5 +23,4 @@ nebula_add_test(
         ${PROXYGEN_LIBRARIES}
         gtest
         curl
-
 )

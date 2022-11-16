@@ -9,6 +9,7 @@
 #include "common/base/Base.h"
 #include "common/meta/SchemaManager.h"
 #include "kvstore/Common.h"
+#include "kvstore/LogEncoder.h"
 #include "kvstore/raftex/Host.h"
 #include "kvstore/raftex/RaftPart.h"
 #include "kvstore/wal/FileBasedWal.h"
@@ -186,7 +187,7 @@ class Listener : public raftex::RaftPart {
    * @param data Key/value to apply
    * @return True if succeed. False if failed.
    */
-  virtual bool apply(const std::vector<KV>& data) = 0;
+  virtual bool apply(const BatchHolder& batch) = 0;
 
   /**
    * @brief Persist commitLogId commitLogTerm and lastApplyLogId

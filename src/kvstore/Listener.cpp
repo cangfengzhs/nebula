@@ -172,8 +172,9 @@ void Listener::processLogs() {
   }
 
   LogID lastApplyId = -1;
-  // the kv pair which can sync to remote safely
-  std::vector<KV> data;
+  // // the kv pair which can sync to remote safely
+  // std::vector<KV> data;
+  BatchHolder batch;
   while (iter->valid()) {
     lastApplyId = iter->logId();
 
@@ -189,28 +190,52 @@ void Listener::processLogs() {
       case OP_PUT: {
         auto pieces = decodeMultiValues(log);
         DCHECK_EQ(2, pieces.size());
-        data.emplace_back(pieces[0], pieces[1]);
+        batch.put(pieces[0].toString(), pieces[1].toString());
         break;
       }
       case OP_MULTI_PUT: {
         auto kvs = decodeMultiValues(log);
         DCHECK_EQ(0, kvs.size() % 2);
         for (size_t i = 0; i < kvs.size(); i += 2) {
-          data.emplace_back(kvs[i], kvs[i + 1]);
+          batch.put(kvs[i].toString(), kvs[i + 1].toString());
         }
         break;
       }
-      case OP_REMOVE:
-      case OP_REMOVE_RANGE:
+      case OP_REMOVE: {
+        auto key = decodeSingleValue(log);
+        batch.remove(key.toString());
+        break;
+      }
+      case OP_REMOVE_RANGE: {
+        auto kvs = decodeMultiValues(log);
+        DCHECK_EQ(2, kvs.size());
+        batch.rangeRemove(kvs[0].toString(), kvs[1].toString());
+        break;
+      }
       case OP_MULTI_REMOVE: {
+        auto keys = decodeMultiValues(log);
+        for (auto key : keys) {
+          batch.remove(key.toString());
+        }
         break;
       }
       case OP_BATCH_WRITE: {
-        auto batch = decodeBatchValue(log);
-        for (auto& op : batch) {
+        auto batchData = decodeBatchValue(log);
+        for (auto& op : batchData) {
           // OP_BATCH_REMOVE and OP_BATCH_REMOVE_RANGE is igored
-          if (op.first == BatchLogType::OP_BATCH_PUT) {
-            data.emplace_back(op.second.first, op.second.second);
+          switch (op.first) {
+            case BatchLogType::OP_BATCH_PUT: {
+              batch.put(op.second.first.toString(), op.second.second.toString());
+              break;
+            }
+            case BatchLogType::OP_BATCH_REMOVE: {
+              batch.remove(op.second.first.toString());
+              break;
+            }
+            case BatchLogType::OP_BATCH_REMOVE_RANGE: {
+              batch.rangeRemove(op.second.first.toString(), op.second.second.toString());
+              break;
+            }
           }
         }
         break;
@@ -226,14 +251,14 @@ void Listener::processLogs() {
       }
     }
 
-    if (static_cast<int32_t>(data.size()) > FLAGS_listener_commit_batch_size) {
+    if (static_cast<int32_t>(batch.size()) > FLAGS_listener_commit_batch_size) {
       break;
     }
     ++(*iter);
   }
 
   // apply to state machine
-  if (lastApplyId != -1 && apply(data)) {
+  if (lastApplyId != -1 && apply(batch)) {
     std::lock_guard<std::mutex> guard(raftLock_);
     lastApplyLogId_ = lastApplyId;
     persist(committedLogId_, term_, lastApplyLogId_);
@@ -250,15 +275,14 @@ std::tuple<nebula::cpp2::ErrorCode, int64_t, int64_t> Listener::commitSnapshot(
   VLOG(2) << idStr_ << "Listener is committing snapshot.";
   int64_t count = 0;
   int64_t size = 0;
-  std::vector<KV> data;
-  data.reserve(rows.size());
+  BatchHolder batch;
   for (const auto& row : rows) {
     count++;
     size += row.size();
     auto kv = decodeKV(row);
-    data.emplace_back(kv.first, kv.second);
+    batch.put(kv.first.toString(), kv.second.toString());
   }
-  if (!apply(data)) {
+  if (!apply(batch)) {
     LOG(INFO) << idStr_ << "Failed to apply data while committing snapshot.";
     return {
         nebula::cpp2::ErrorCode::E_RAFT_PERSIST_SNAPSHOT_FAILED, kNoSnapshotCount, kNoSnapshotSize};
